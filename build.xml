@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="ReclutamientoApp" default="run" basedir=".">
+    <!--
+      Uso:  ant run
+      JavaFX: si no se indica -Djavafx.lib=RUTA, la primera vez se descargan
+      automáticamente los jars de JavaFX (necesita internet) en lib/javafx.
+    -->
+    <property name="main.class" value="com.kinal.reclutamiento.Main"/>
+    <property name="src.dir" value="src/main/java"/>
+    <property name="res.dir" value="src/main/resources"/>
+    <property name="build.dir" value="build"/>
+    <property name="classes.dir" value="${build.dir}/classes"/>
+    <property name="dist.dir" value="dist"/>
+    <property name="lib.dir" value="lib"/>
+    <property name="fx.version" value="21.0.5"/>
+    <property name="fx.dir" location="lib/javafx"/>
+
+    <condition property="fx.platform" value="win">
+        <os family="windows"/>
+    </condition>
+    <condition property="fx.platform" value="mac-aarch64">
+        <and><os family="mac"/><os arch="aarch64"/></and>
+    </condition>
+    <condition property="fx.platform" value="mac">
+        <os family="mac"/>
+    </condition>
+    <property name="fx.platform" value="linux"/>
+
+    <path id="lib.path">
+        <fileset dir="${lib.dir}" includes="*.jar"/>
+    </path>
+
+    <target name="fx-detect">
+        <condition property="javafx.lib" value="${fx.dir}">
+            <available file="${fx.dir}/javafx-controls.jar"/>
+        </condition>
+    </target>
+
+    <target name="fx-download" depends="fx-detect" unless="javafx.lib">
+        <echo>Descargando JavaFX ${fx.version} (${fx.platform}) en ${fx.dir} ...</echo>
+        <mkdir dir="${fx.dir}"/>
+        <get src="https://repo1.maven.org/maven2/org/openjfx/javafx-base/${fx.version}/javafx-base-${fx.version}-${fx.platform}.jar" dest="${fx.dir}/javafx-base.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/openjfx/javafx-graphics/${fx.version}/javafx-graphics-${fx.version}-${fx.platform}.jar" dest="${fx.dir}/javafx-graphics.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/openjfx/javafx-controls/${fx.version}/javafx-controls-${fx.version}-${fx.platform}.jar" dest="${fx.dir}/javafx-controls.jar" skipexisting="true"/>
+        <get src="https://repo1.maven.org/maven2/org/openjfx/javafx-fxml/${fx.version}/javafx-fxml-${fx.version}-${fx.platform}.jar" dest="${fx.dir}/javafx-fxml.jar" skipexisting="true"/>
+        <property name="javafx.lib" value="${fx.dir}"/>
+    </target>
+
+    <target name="clean">
+        <delete dir="${build.dir}"/>
+        <delete dir="${dist.dir}"/>
+    </target>
+
+    <target name="compile" depends="fx-download">
+        <mkdir dir="${classes.dir}"/>
+        <javac srcdir="${src.dir}" destdir="${classes.dir}" includeantruntime="false" encoding="UTF-8" fork="true">
+            <compilerarg value="--module-path"/>
+            <compilerarg value="${javafx.lib}"/>
+            <compilerarg value="--add-modules"/>
+            <compilerarg value="javafx.controls,javafx.fxml"/>
+            <classpath refid="lib.path"/>
+        </javac>
+        <copy todir="${classes.dir}">
+            <fileset dir="${res.dir}"/>
+        </copy>
+    </target>
+
+    <target name="run" depends="compile">
+        <java classname="${main.class}" fork="true">
+            <jvmarg value="--module-path"/>
+            <jvmarg value="${javafx.lib}"/>
+            <jvmarg value="--add-modules"/>
+            <jvmarg value="javafx.controls,javafx.fxml"/>
+            <classpath>
+                <pathelement location="${classes.dir}"/>
+                <path refid="lib.path"/>
+            </classpath>
+        </java>
+    </target>
+
+    <target name="jar" depends="compile">
+        <mkdir dir="${dist.dir}"/>
+        <jar destfile="${dist.dir}/ReclutamientoApp.jar" basedir="${classes.dir}"/>
+    </target>
+</project>
